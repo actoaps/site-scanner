@@ -52,9 +52,17 @@ public class ScannerService {
             if (!pe.hasSameHost()) {
                 return;
             }
+
             String redirect = temp.header("location");
+
             if (StringUtils.isNotEmpty(redirect))
             {
+                if (redirect.startsWith("/")) {
+                    redirect = site._1.getScheme()
+                            .concat("://")
+                            .concat(site._1.getHost())
+                            .concat(redirect);
+                }
                 queue(redirect, pn);
                 return;
             }

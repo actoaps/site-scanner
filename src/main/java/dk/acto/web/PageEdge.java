@@ -1,5 +1,7 @@
 package dk.acto.web;
 
+import com.google.common.net.InternetDomainName;
+
 /**
  * Created by Grudge on 29/04/2017.
  */
@@ -36,6 +38,12 @@ public class PageEdge {
     }
 
     public boolean hasSameHost() {
-        return parent == null || parent.getUri().getHost().equals(child.getUri().getHost());
+        if (parent == null)
+            return true;
+
+        InternetDomainName left = InternetDomainName.from(parent.getUri().getHost()).topPrivateDomain();
+        InternetDomainName right = InternetDomainName.from(child.getUri().getHost()).topPrivateDomain();
+
+        return left.equals(right);
     }
 }
