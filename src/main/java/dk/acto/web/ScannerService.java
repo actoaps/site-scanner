@@ -4,6 +4,7 @@ import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 import javaslang.Tuple2;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.utils.URIBuilder;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 
@@ -29,9 +30,11 @@ public class ScannerService {
 
     public void queue(String site, PageNode parent)  {
         try {
-            todo.onNext(new Tuple2<>(new URI(site), parent));
+            URIBuilder builder = new URIBuilder(site).clearParameters();
+            todo.onNext(new Tuple2<>(builder.build(), parent));
         } catch (URISyntaxException e) {
-            e.printStackTrace();
+            PageEdge pe = new PageEdge(parent, new PageNode(null, null,  site + " is an invalid url. "), 0);
+            result.onNext(pe);
         }
     }
 
@@ -45,7 +48,12 @@ public class ScannerService {
             return;
         visited.add(site._1());
         try {
-            Connection.Response temp = Jsoup.connect(site._1().toString()).followRedirects(false).ignoreContentType(true).ignoreHttpErrors(true).execute();
+            Connection.Response temp = Jsoup.connect(site._1().toString())
+                    .followRedirects(false)
+                    .ignoreContentType(true)
+                    .ignoreHttpErrors(true)
+                    .execute();
+
             PageNode pn = new PageNode(site._1, temp.contentType(), "");
             PageEdge pe = new PageEdge(site._2(), pn, temp.statusCode());
             result.onNext(pe);
