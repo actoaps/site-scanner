@@ -1,0 +1,8 @@
+syntax: regexp
+
+# Intellij
+\.idea
+.*\.iml$
+
+# Maven
+target/
