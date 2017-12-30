@@ -1,13 +1,18 @@
 package dk.acto.web;
 
+import com.machinepublishers.jbrowserdriver.JBrowserDriver;
+import com.machinepublishers.jbrowserdriver.Settings;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 import javaslang.Tuple2;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
+import org.openqa.selenium.OutputType;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -76,13 +81,17 @@ public class ScannerService {
             }
 
             if (temp.contentType().contains("text/html")) {
-                temp.parse()
+
+                JBrowserDriver driver = new JBrowserDriver();
+                driver.get(site._1.toString());
+                Jsoup.parse(driver.getPageSource(), site._1.toString())
                         .select("a[href]")
                         .stream()
                         .map(x -> x.absUrl("href"))
                         .map(schema::matcher)
                         .filter(Matcher::find)
                         .forEach(x -> queue(x.group(), pn));
+                driver.quit();
             }
         } catch (IOException e) {
             PageNode pn = new PageNode(site._1, "", "Error: " + e.getMessage());
