@@ -1,39 +1,20 @@
 package dk.acto.web;
 
+import lombok.Builder;
+import lombok.Data;
+import lombok.Singular;
+
 import java.net.URI;
+import java.util.List;
 
 /**
  * Created by Grudge on 29/04/2017.
  */
+@Data
+@Builder
 public class PageNode {
     private final URI uri;
     private final String contentType;
-    private final String message;
-
-    public PageNode(URI uri, String contentType, String message) {
-        this.uri = uri;
-        this.contentType = contentType;
-        this.message = message;
-    }
-
-    public URI getUri() {
-        return uri;
-    }
-
-    public String getContentType() {
-        return contentType;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    @Override
-    public String toString() {
-        return "PageNode{" +
-                "uri=" + uri +
-                ", contentType='" + contentType + '\'' +
-                ", message='" + message + '\'' +
-                '}';
-    }
+    @Singular
+    private final List<String> messages;
 }

@@ -1,41 +1,20 @@
 package dk.acto.web;
 
 import com.google.common.net.InternetDomainName;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by Grudge on 29/04/2017.
  */
+@Data
+@Builder
+@Slf4j
 public class PageEdge {
     private final PageNode parent;
     private final PageNode child;
-    private final int StatusCode;
-
-    public PageEdge(PageNode parent, PageNode child, int statusCode) {
-        this.parent = parent;
-        this.child = child;
-        StatusCode = statusCode;
-    }
-
-    public PageNode getParent() {
-        return parent;
-    }
-
-    public PageNode getChild() {
-        return child;
-    }
-
-    public int getStatusCode() {
-        return StatusCode;
-    }
-
-    @Override
-    public String toString() {
-        return "PageEdge{" +
-                "parent=" + parent +
-                ", child=" + child +
-                ", StatusCode=" + StatusCode +
-                '}';
-    }
+    private final int statusCode;
 
     public boolean hasSameHost() {
         if (parent == null)
@@ -44,6 +23,7 @@ public class PageEdge {
         InternetDomainName left = InternetDomainName.from(parent.getUri().getHost()).topPrivateDomain();
         InternetDomainName right = InternetDomainName.from(child.getUri().getHost()).topPrivateDomain();
 
+        log.info("%s == %s", left, right);
         return left.equals(right);
     }
 }

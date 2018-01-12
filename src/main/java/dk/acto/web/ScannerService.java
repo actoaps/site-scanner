@@ -1,19 +1,18 @@
 package dk.acto.web;
 
-import com.machinepublishers.jbrowserdriver.JBrowserDriver;
-import com.machinepublishers.jbrowserdriver.Settings;
+
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
-import javaslang.Tuple2;
-import org.apache.commons.io.FileUtils;
+import io.vavr.Tuple2;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.tika.Tika;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
-import org.openqa.selenium.OutputType;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Set;
@@ -26,11 +25,17 @@ public class ScannerService {
     private final PublishSubject<PageEdge> result;
     private final Set<URI> visited = ConcurrentHashMap.newKeySet();
     private final Pattern schema = Pattern.compile("(http[s]?:\\/\\/[^#]+)");
+    private final WebDriver driver;
+    private final Tika tika = new Tika();
 
     public ScannerService() {
         todo = PublishSubject.create();
         result = PublishSubject.create();
         todo.subscribe(this::scanPage);
+        ChromeOptions chromeOptions = new ChromeOptions();
+        chromeOptions.addArguments("--headless");
+
+        driver = new ChromeDriver(chromeOptions);
     }
 
     public void queue(String site, PageNode parent)  {
@@ -38,7 +43,7 @@ public class ScannerService {
             URIBuilder builder = new URIBuilder(site).clearParameters();
             todo.onNext(new Tuple2<>(builder.build(), parent));
         } catch (URISyntaxException e) {
-            PageEdge pe = new PageEdge(parent, new PageNode(null, null,  site + " is an invalid url. "), 0);
+            PageEdge pe = new PageEdge(parent, PageNode.builder().uri(null).contentType(null).message(site + " is an invalid url. ").build(), 0);
             result.onNext(pe);
         }
     }
@@ -59,9 +64,18 @@ public class ScannerService {
                     .ignoreHttpErrors(true)
                     .execute();
 
-            PageNode pn = new PageNode(site._1, temp.contentType(), "");
-            PageEdge pe = new PageEdge(site._2(), pn, temp.statusCode());
+            PageNode pn = PageNode.builder()
+                    .uri(site._1())
+                    .contentType(temp.contentType())
+                    .build();
+            PageEdge pe = PageEdge.builder()
+                    .parent(site._2())
+                    .child(pn)
+                    .statusCode(temp.statusCode())
+                    .build();
+
             result.onNext(pe);
+
             if (!pe.hasSameHost()) {
                 return;
             }
@@ -80,10 +94,16 @@ public class ScannerService {
                 return;
             }
 
-            if (temp.contentType().contains("text/html")) {
+            String result = tika.detect(temp.bodyAsBytes(), site._1.getPath());
+            System.out.println(String.format("Tika says: %s is %s, server reported %s.", site._1.getPath(), result, temp.contentType()));
 
-                JBrowserDriver driver = new JBrowserDriver();
+            if (temp.contentType().contains("text/html")) {
+                if (!result.equals("text/html")) {
+                    pn.getMessages().add("Server claims Content-type is %s but was detected as %s");
+                }
+                long start = System.currentTimeMillis();
                 driver.get(site._1.toString());
+                System.out.println(String.format("Page load took %sms", System.currentTimeMillis() - start));
                 Jsoup.parse(driver.getPageSource(), site._1.toString())
                         .select("a[href]")
                         .stream()
@@ -91,11 +111,19 @@ public class ScannerService {
                         .map(schema::matcher)
                         .filter(Matcher::find)
                         .forEach(x -> queue(x.group(), pn));
-                driver.quit();
             }
-        } catch (IOException e) {
-            PageNode pn = new PageNode(site._1, "", "Error: " + e.getMessage());
-            PageEdge pe = new PageEdge(site._2(), pn, 0);
+        } catch (Throwable t) {
+
+            PageNode pn = PageNode.builder()
+                    .uri(site._1())
+                    .contentType("")
+                    .message("Error: " + t.getMessage())
+                    .build();
+            PageEdge pe = PageEdge.builder()
+                    .parent(site._2())
+                    .child(pn)
+                    .statusCode(-1)
+                    .build();
             result.onNext(pe);
         }
     }
