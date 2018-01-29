@@ -11,5 +11,6 @@ import java.util.List;
 public class ResponseSummary {
     private Integer statusCode;
     @Singular
-    private List<PageNode> nodes;
+    private List<PageChildren> pages;
+
 }

@@ -1,5 +1,9 @@
 Status Code : {{statusCode}}
-Count : {{nodes.size}}
-{{#nodes}}
-* {{uri}}
-{{/nodes}}
+Count : {{pages.size}}
+{{#pages}}
+* {{statusCode}} - {{parent.uri}} - {{parent.loadTimeInMillis}}ms
+{{#children}}
+** {{statusCode}} - {{uri}}
+{{/children}}
+
+{{/pages}}

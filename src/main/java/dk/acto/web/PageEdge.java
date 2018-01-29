@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 public class PageEdge {
     private final PageNode parent;
     private final PageNode child;
-    private final int statusCode;
 
     public boolean hasSameHost() {
         if (parent == null)
@@ -23,7 +22,6 @@ public class PageEdge {
         InternetDomainName left = InternetDomainName.from(parent.getUri().getHost()).topPrivateDomain();
         InternetDomainName right = InternetDomainName.from(child.getUri().getHost()).topPrivateDomain();
 
-        log.info("%s == %s", left, right);
         return left.equals(right);
     }
 }
