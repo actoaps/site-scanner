@@ -6,6 +6,7 @@ import io.reactivex.subjects.PublishSubject;
 import io.vavr.Tuple2;
 import io.vavr.control.Either;
 import io.vavr.control.Try;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -27,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Slf4j
 public class ScannerService {
     private final PublishSubject<Tuple2<URI, PageNode>> todo;
     private final PublishSubject<PageEdge> result;
@@ -83,7 +85,10 @@ public class ScannerService {
             result.onNext(pe);
             return;
         }
+
         try {
+            log.info("scanning: " + site._1());
+
             Request request = new Request.Builder()
                     .url(site._1.toURL())
                     .build();
@@ -133,7 +138,6 @@ public class ScannerService {
                         .forEach(x -> queue(x.group(), pn));
             }
 
-        System.out.println("Done: " + this.visited.size());
         } catch (Throwable t) {
 
             PageNode pn = PageNode.builder()
