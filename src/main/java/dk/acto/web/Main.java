@@ -18,10 +18,8 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -106,8 +104,11 @@ public class Main {
             Response zipResponse = client.newCall(request).execute();
             ZipInputStream zis = new ZipInputStream(zipResponse.body().byteStream());
             ZipEntry entry = zis.getNextEntry();
-            String name = entry.getName();
-            Files.copy(zis, Paths.get(name));
+            var path = Paths.get(entry.getName());
+            Files.copy(zis, path);
+            var perms = Files.getPosixFilePermissions(path);
+            perms.add(PosixFilePermission.OWNER_EXECUTE);
+            Files.setPosixFilePermissions(path, perms);
         }
 
     }
